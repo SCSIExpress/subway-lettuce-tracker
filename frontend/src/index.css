@@ -1,0 +1,225 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles for bento box design */
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  body {
+    @apply bg-bento-50 text-bento-900 m-0 min-w-80 min-h-screen;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  #root {
+    @apply w-full;
+  }
+  
+  * {
+    @apply border-bento-200;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Bento card base style */
+  .bento-card {
+    @apply bg-white rounded-2xl shadow-bento border border-bento-200 p-4 transition-all duration-200;
+  }
+  
+  .bento-card:hover {
+    @apply shadow-bento-lg transform scale-[1.02];
+  }
+  
+  /* Button styles */
+  .btn-primary {
+    @apply bg-leaf-600 hover:bg-leaf-700 text-white font-medium py-2 px-4 rounded-xl transition-colors duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-bento-100 hover:bg-bento-200 text-bento-700 font-medium py-2 px-4 rounded-xl transition-colors duration-200;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent hover:bg-bento-100 text-bento-600 font-medium py-2 px-4 rounded-xl transition-colors duration-200;
+  }
+  
+  /* Input styles */
+  .input-base {
+    @apply w-full px-3 py-2 border border-bento-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-leaf-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-bento-200 border-t-leaf-600;
+  }
+  
+  /* Slide up panel animation */
+  .slide-panel {
+    @apply fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-bento-xl transform transition-transform duration-300 ease-out;
+  }
+  
+  .slide-panel.open {
+    @apply translate-y-0;
+  }
+  
+  .slide-panel.closed {
+    @apply translate-y-full;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  /* Custom scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.bento.300') theme('colors.bento.100');
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-bento-100 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-bento-300 rounded-full;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-bento-400;
+  }
+  
+  /* Safe area padding for mobile */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-leaf-600 to-leaf-500 bg-clip-text text-transparent;
+  }
+  
+  /* Touch-friendly interactions */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  /* Mobile-optimized tap targets */
+  .tap-target {
+    @apply relative overflow-hidden;
+  }
+  
+  .tap-target::before {
+    content: '';
+    @apply absolute inset-0 bg-current opacity-0 transition-opacity duration-150;
+  }
+  
+  .tap-target:active::before {
+    @apply opacity-10;
+  }
+  
+  /* Responsive text sizing */
+  .text-responsive-xs {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl;
+  }
+  
+  .text-responsive-xl {
+    @apply text-xl sm:text-2xl;
+  }
+  
+  /* Mobile-first spacing */
+  .spacing-mobile {
+    @apply p-3 sm:p-4 md:p-6;
+  }
+  
+  .spacing-mobile-x {
+    @apply px-3 sm:px-4 md:px-6;
+  }
+  
+  .spacing-mobile-y {
+    @apply py-3 sm:py-4 md:py-6;
+  }
+  
+  /* Responsive grid layouts */
+  .grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6;
+  }
+  
+  /* Custom animations */
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  @keyframes slideDown {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Mobile-optimized animations */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-up,
+    .animate-slide-down,
+    .animate-fade-in,
+    .animate-scale-in,
+    .animate-bounce-gentle {
+      animation: none;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .bento-card {
+      @apply border-2 border-bento-400;
+    }
+  }
+  
+  /* Dark mode preparation */
+  @media (prefers-color-scheme: dark) {
+    .dark-mode-ready {
+      @apply bg-bento-800 text-bento-100;
+    }
+  }
+}

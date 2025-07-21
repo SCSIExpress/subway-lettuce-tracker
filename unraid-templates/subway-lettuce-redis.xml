@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Subway-Lettuce-Redis</Name>
+  <Repository>redis:7-alpine</Repository>
+  <Registry>https://hub.docker.com/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
+  <Project>https://redis.io/</Project>
+  <Overview>Redis cache server for the Subway Lettuce Tracker application. This container provides high-performance caching and session storage to improve application response times.
+
+Features:
+- Redis 7 with Alpine Linux
+- Persistent data storage with AOF
+- Password authentication
+- Memory optimization
+- Health checks and monitoring
+
+This is a required component for the Subway Lettuce Tracker application to provide optimal performance.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-redis.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/docker-library/docs/master/redis/logo.png</Icon>
+  <ExtraParams>--network=subway-network</ExtraParams>
+  <PostArgs>redis-server --appendonly yes --requirepass [REDIS_PASSWORD] --maxmemory 256mb --maxmemory-policy allkeys-lru</PostArgs>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Part of Subway Lettuce Tracker stack</Requires>
+  <Config Name="Redis Port" Target="6379" Default="6379" Mode="tcp" Description="Redis server port" Type="Port" Display="always" Required="true" Mask="false">6379</Config>
+  <Config Name="Redis Data" Target="/data" Default="/mnt/user/appdata/subway-lettuce-tracker/redis" Mode="rw" Description="Redis data directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/redis</Config>
+  <Config Name="Redis Password" Target="REDIS_PASSWORD" Default="redis123" Mode="" Description="Redis authentication password (CHANGE THIS!)" Type="Variable" Display="always" Required="true" Mask="true">redis123</Config>
+  <Config Name="Max Memory" Target="REDIS_MAXMEMORY" Default="256mb" Mode="" Description="Maximum memory usage" Type="Variable" Display="advanced" Required="false" Mask="false">256mb</Config>
+  <Config Name="Memory Policy" Target="REDIS_MAXMEMORY_POLICY" Default="allkeys-lru" Mode="" Description="Memory eviction policy" Type="Variable" Display="advanced" Required="false" Mask="false">allkeys-lru</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+</Container>

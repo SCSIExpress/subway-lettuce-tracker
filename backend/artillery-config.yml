@@ -1,0 +1,191 @@
+config:
+  target: 'http://localhost:3001'
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 60
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up load"
+    # Sustained load phase
+    - duration: 120
+      arrivalRate: 50
+      name: "Sustained load"
+    # Peak load phase
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+    # Cool-down phase
+    - duration: 30
+      arrivalRate: 10
+      name: "Cool-down"
+  
+  # Performance thresholds
+  ensure:
+    thresholds:
+      - http.response_time.p95: 500  # 95% of requests should complete within 500ms
+      - http.response_time.p99: 1000 # 99% of requests should complete within 1s
+      - http.request_rate: 45        # Should handle at least 45 requests per second
+      - http.codes.200: 95           # 95% success rate minimum
+
+  # Request defaults
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+      User-Agent: 'Artillery Load Test'
+
+  # Variables for dynamic testing
+  variables:
+    coordinates:
+      - lat: 40.7128
+        lng: -74.0060
+      - lat: 40.7589
+        lng: -73.9851
+      - lat: 40.7359
+        lng: -73.9911
+      - lat: 34.0522
+        lng: -118.2437
+      - lat: 41.8781
+        lng: -87.6298
+
+scenarios:
+  # Test nearby location searches
+  - name: "Search nearby locations"
+    weight: 60
+    flow:
+      - get:
+          url: "/api/locations/nearby"
+          qs:
+            lat: "{{ coordinates.lat }}"
+            lng: "{{ coordinates.lng }}"
+            radius: 5000
+            limit: 20
+          capture:
+            - json: "$.locations[0].id"
+              as: "locationId"
+      - think: 1
+
+  # Test location details
+  - name: "Get location details"
+    weight: 25
+    flow:
+      - get:
+          url: "/api/locations/nearby"
+          qs:
+            lat: "{{ coordinates.lat }}"
+            lng: "{{ coordinates.lng }}"
+            limit: 1
+          capture:
+            - json: "$.locations[0].id"
+              as: "locationId"
+      - get:
+          url: "/api/locations/{{ locationId }}"
+          ifTrue: "locationId"
+      - think: 2
+
+  # Test rating submission
+  - name: "Submit ratings"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/locations/nearby"
+          qs:
+            lat: "{{ coordinates.lat }}"
+            lng: "{{ coordinates.lng }}"
+            limit: 1
+          capture:
+            - json: "$.locations[0].id"
+              as: "locationId"
+      - post:
+          url: "/api/locations/{{ locationId }}/ratings"
+          ifTrue: "locationId"
+          json:
+            score: "{{ $randomInt(1, 5) }}"
+      - think: 1
+
+  # Test rating summaries
+  - name: "Get rating summaries"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/locations/nearby"
+          qs:
+            lat: "{{ coordinates.lat }}"
+            lng: "{{ coordinates.lng }}"
+            limit: 1
+          capture:
+            - json: "$.locations[0].id"
+              as: "locationId"
+      - get:
+          url: "/api/locations/{{ locationId }}/ratings/summary"
+          ifTrue: "locationId"
+      - think: 3
+
+  # Stress test with concurrent requests
+  - name: "Concurrent location searches"
+    weight: 10
+    flow:
+      - parallel:
+          - get:
+              url: "/api/locations/nearby"
+              qs:
+                lat: 40.7128
+                lng: -74.0060
+                radius: 2000
+          - get:
+              url: "/api/locations/nearby"
+              qs:
+                lat: 40.7589
+                lng: -73.9851
+                radius: 3000
+          - get:
+              url: "/api/locations/nearby"
+              qs:
+                lat: 40.7359
+                lng: -73.9911
+                radius: 4000
+
+  # Error handling test
+  - name: "Error scenarios"
+    weight: 5
+    flow:
+      # Test invalid coordinates
+      - get:
+          url: "/api/locations/nearby"
+          qs:
+            lat: 91  # Invalid latitude
+            lng: -74.0060
+          expect:
+            - statusCode: 400
+      # Test invalid location ID
+      - get:
+          url: "/api/locations/invalid-uuid"
+          expect:
+            - statusCode: 400
+      # Test invalid rating
+      - post:
+          url: "/api/locations/123e4567-e89b-12d3-a456-426614174000/ratings"
+          json:
+            score: 6  # Invalid score
+          expect:
+            - statusCode: 400
+
+# Custom metrics and reporting
+plugins:
+  metrics-by-endpoint:
+    useOnlyRequestNames: true
+  
+  # Custom metrics
+  publish-metrics:
+    - type: statsd
+      host: localhost
+      port: 8125
+      prefix: "artillery.subway_lettuce_tracker"
+
+# After test hooks
+after:
+  flow:
+    - log: "Load test completed. Check performance metrics."

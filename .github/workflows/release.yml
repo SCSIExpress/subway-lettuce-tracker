@@ -1,0 +1,195 @@
+name: Release and Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  update-templates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Unraid templates
+        run: |
+          # Get the repository name in lowercase
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          VERSION="${{ steps.version.outputs.version }}"
+          
+          echo "Updating templates for repository: $REPO_LOWER"
+          echo "Using version: $VERSION"
+          
+          # Update all-in-one template
+          sed -i "s|<Repository>.*</Repository>|<Repository>ghcr.io/${REPO_LOWER}-aio:latest</Repository>|g" unraid-templates/subway-lettuce-tracker-all-in-one.xml
+          
+          # Update stack template  
+          sed -i "s|<Repository>.*</Repository>|<Repository>ghcr.io/${REPO_LOWER}-frontend:latest</Repository>|g" unraid-templates/subway-lettuce-tracker-stack.xml
+          
+          # Update template URLs
+          sed -i "s|https://raw.githubusercontent.com/your-username/subway-lettuce-tracker|https://raw.githubusercontent.com/${{ github.repository }}|g" unraid-templates/*.xml
+          
+          # Update support and project URLs
+          sed -i "s|https://github.com/your-username/subway-lettuce-tracker|https://github.com/${{ github.repository }}|g" unraid-templates/*.xml
+          
+          # Update icon URLs
+          sed -i "s|https://raw.githubusercontent.com/your-username/subway-lettuce-tracker|https://raw.githubusercontent.com/${{ github.repository }}|g" unraid-templates/*.xml
+
+      - name: Validate XML templates
+        run: |
+          # Check if XML files are valid
+          for file in unraid-templates/*.xml; do
+            echo "Validating $file"
+            xmllint --noout "$file" || exit 1
+          done
+
+      - name: Commit updated templates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add unraid-templates/*.xml
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update Unraid templates for release ${{ steps.version.outputs.version }} [skip ci]"
+            git push
+          fi
+
+  create-deployment-package:
+    runs-on: ubuntu-latest
+    needs: update-templates
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create deployment package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE_NAME="subway-lettuce-tracker-${VERSION}"
+          
+          # Create deployment directory
+          mkdir -p "${PACKAGE_NAME}"
+          
+          # Copy deployment files
+          cp docker-compose.yml "${PACKAGE_NAME}/"
+          cp docker-compose.prod.yml "${PACKAGE_NAME}/"
+          cp docker-compose.dev.yml "${PACKAGE_NAME}/"
+          cp .env.example "${PACKAGE_NAME}/"
+          cp .env.production.template "${PACKAGE_NAME}/"
+          cp deploy-production.sh "${PACKAGE_NAME}/"
+          cp unraid-setup.sh "${PACKAGE_NAME}/"
+          cp -r unraid-templates "${PACKAGE_NAME}/"
+          cp -r nginx "${PACKAGE_NAME}/"
+          cp *.md "${PACKAGE_NAME}/"
+          
+          # Create deployment instructions
+          cat > "${PACKAGE_NAME}/DEPLOYMENT_INSTRUCTIONS.md" << 'EOF'
+          # Subway Lettuce Tracker Deployment Package
+          
+          This package contains everything needed to deploy the Subway Lettuce Tracker application.
+          
+          ## Quick Start
+          
+          ### Docker Compose (Recommended)
+          1. Copy `.env.example` to `.env` and configure your settings
+          2. Run: `./deploy-production.sh`
+          
+          ### Unraid
+          1. Run: `./unraid-setup.sh`
+          2. Install the templates from the `unraid-templates/` directory
+          
+          ### Manual Docker
+          1. Configure environment variables
+          2. Run: `docker-compose -f docker-compose.prod.yml up -d`
+          
+          ## Docker Images
+          
+          - All-in-One: `ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-aio:${VERSION}`
+          - Backend: `ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-backend:${VERSION}`
+          - Frontend: `ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-frontend:${VERSION}`
+          
+          ## Documentation
+          
+          - `README.md` - Main project documentation
+          - `PRODUCTION_DEPLOYMENT.md` - Production deployment guide
+          - `UNRAID_DEPLOYMENT.md` - Unraid-specific instructions
+          - `DOCKER_ENV_GUIDE.md` - Environment variables guide
+          
+          ## Support
+          
+          For issues and support, visit: https://github.com/${{ github.repository }}
+          EOF
+          
+          # Create archive
+          tar -czf "${PACKAGE_NAME}.tar.gz" "${PACKAGE_NAME}"
+          zip -r "${PACKAGE_NAME}.zip" "${PACKAGE_NAME}"
+          
+          echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
+
+      - name: Upload deployment package
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: |
+            ${{ env.PACKAGE_NAME }}.tar.gz
+            ${{ env.PACKAGE_NAME }}.zip
+          retention-days: 90
+
+  notify-community:
+    runs-on: ubuntu-latest
+    needs: [update-templates, create-deployment-package]
+    if: github.event_name == 'release'
+
+    steps:
+      - name: Create community notification
+        run: |
+          echo "## 🚀 New Release: ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Docker Images Available:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-aio:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-backend:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}-frontend:${{ github.event.release.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Unraid Templates Updated:" >> $GITHUB_STEP_SUMMARY
+          echo "- All templates now point to the latest images" >> $GITHUB_STEP_SUMMARY
+          echo "- Template URLs updated with correct repository paths" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Package Created:" >> $GITHUB_STEP_SUMMARY
+          echo "- Contains all necessary files for deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- Available as both .tar.gz and .zip formats" >> $GITHUB_STEP_SUMMARY

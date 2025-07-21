@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Subway-Lettuce-Tracker-Stack</Name>
+  <Repository>ghcr.io/your-username/subway-lettuce-tracker:latest</Repository>
+  <Registry>https://ghcr.io/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
+  <Project>https://github.com/your-username/subway-lettuce-tracker</Project>
+  <Overview>Subway Lettuce Tracker - A web application to track and rate lettuce quality at Subway locations. This is the main application stack that includes frontend, backend, database, and cache services.
+
+Features:
+- Location-based Subway restaurant finder
+- Lettuce quality rating system
+- Real-time data synchronization
+- Offline support with PWA
+- Google Maps integration
+- Performance monitoring
+
+This template sets up the complete application stack. Make sure to configure all required environment variables, especially the Google Maps API key.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-stack.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
+  <ExtraParams>--network=subway-network</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>PostgreSQL and Redis containers (see separate templates)</Requires>
+  <Config Name="Frontend Port" Target="8080" Default="3000" Mode="tcp" Description="Port for the web interface" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Backend Port" Target="5000" Default="5000" Mode="tcp" Description="Port for the API backend" Type="Port" Display="always" Required="true" Mask="false">5000</Config>
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/subway-lettuce-tracker" Mode="rw" Description="Application data directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker</Config>
+  <Config Name="Logs" Target="/app/logs" Default="/mnt/user/appdata/subway-lettuce-tracker/logs" Mode="rw" Description="Application logs directory" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/logs</Config>
+  <Config Name="Google Maps API Key" Target="VITE_GOOGLE_MAPS_API_KEY" Default="" Mode="" Description="Google Maps API Key (REQUIRED for maps functionality)" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Application Name" Target="VITE_APP_NAME" Default="Subway Lettuce Tracker" Mode="" Description="Name of the application" Type="Variable" Display="always" Required="false" Mask="false">Subway Lettuce Tracker</Config>
+  <Config Name="API URL" Target="VITE_API_URL" Default="http://[IP]:5000/api" Mode="" Description="Backend API URL" Type="Variable" Display="always" Required="false" Mask="false">http://[IP]:5000/api</Config>
+  <Config Name="Environment" Target="NODE_ENV" Default="production" Mode="" Description="Application environment" Type="Variable" Display="always" Required="false" Mask="false">production</Config>
+  <Config Name="Database URL" Target="DATABASE_URL" Default="postgresql://postgres:postgres123@subway-lettuce-postgres:5432/subway_lettuce_tracker" Mode="" Description="PostgreSQL connection string" Type="Variable" Display="always" Required="true" Mask="true">postgresql://postgres:postgres123@subway-lettuce-postgres:5432/subway_lettuce_tracker</Config>
+  <Config Name="Redis URL" Target="REDIS_URL" Default="redis://:redis123@subway-lettuce-redis:6379" Mode="" Description="Redis connection string" Type="Variable" Display="always" Required="true" Mask="true">redis://:redis123@subway-lettuce-redis:6379</Config>
+  <Config Name="Frontend URL" Target="FRONTEND_URL" Default="http://[IP]:3000" Mode="" Description="Frontend URL for CORS" Type="Variable" Display="always" Required="false" Mask="false">http://[IP]:3000</Config>
+  <Config Name="Default Search Radius" Target="VITE_DEFAULT_RADIUS" Default="5000" Mode="" Description="Default search radius in meters" Type="Variable" Display="always" Required="false" Mask="false">5000</Config>
+  <Config Name="Max Locations" Target="VITE_MAX_LOCATIONS" Default="50" Mode="" Description="Maximum locations to display" Type="Variable" Display="always" Required="false" Mask="false">50</Config>
+  <Config Name="Enable Offline Mode" Target="VITE_ENABLE_OFFLINE_MODE" Default="true" Mode="" Description="Enable offline functionality" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="Enable PWA" Target="VITE_ENABLE_PWA" Default="true" Mode="" Description="Enable Progressive Web App features" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="Enable Analytics" Target="VITE_ENABLE_ANALYTICS" Default="false" Mode="" Description="Enable analytics tracking" Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="Enable Cache" Target="ENABLE_CACHE" Default="true" Mode="" Description="Enable application caching" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="Cache TTL" Target="CACHE_TTL" Default="3600" Mode="" Description="Cache time-to-live in seconds" Type="Variable" Display="always" Required="false" Mask="false">3600</Config>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Application log level (debug, info, warn, error)" Type="Variable" Display="always" Required="false" Mask="false">info</Config>
+  <Config Name="Rate Limit Window" Target="RATE_LIMIT_WINDOW_MS" Default="900000" Mode="" Description="Rate limiting window in milliseconds" Type="Variable" Display="advanced" Required="false" Mask="false">900000</Config>
+  <Config Name="Rate Limit Max Requests" Target="RATE_LIMIT_MAX_REQUESTS" Default="100" Mode="" Description="Maximum requests per rate limit window" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Enable Performance Monitoring" Target="ENABLE_PERFORMANCE_MONITORING" Default="true" Mode="" Description="Enable performance monitoring" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+</Container>

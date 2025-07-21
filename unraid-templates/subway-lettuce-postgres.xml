@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Subway-Lettuce-Postgres</Name>
+  <Repository>postgis/postgis:15-3.3-alpine</Repository>
+  <Registry>https://hub.docker.com/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
+  <Project>https://postgis.net/</Project>
+  <Overview>PostgreSQL database with PostGIS extension for the Subway Lettuce Tracker application. This container provides the main database storage for location data, ratings, and application state.
+
+Features:
+- PostgreSQL 15 with PostGIS 3.3
+- Optimized for geospatial queries
+- Automatic database initialization
+- Health checks and monitoring
+- Persistent data storage
+
+This is a required component for the Subway Lettuce Tracker application.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI/>
+  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-postgres.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/docker-library/docs/master/postgres/logo.png</Icon>
+  <ExtraParams>--network=subway-network</ExtraParams>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Part of Subway Lettuce Tracker stack</Requires>
+  <Config Name="Database Port" Target="5432" Default="5432" Mode="tcp" Description="PostgreSQL database port" Type="Port" Display="always" Required="true" Mask="false">5432</Config>
+  <Config Name="Database Data" Target="/var/lib/postgresql/data" Default="/mnt/user/appdata/subway-lettuce-tracker/postgres" Mode="rw" Description="PostgreSQL data directory" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/postgres</Config>
+  <Config Name="Database Migrations" Target="/docker-entrypoint-initdb.d" Default="/mnt/user/appdata/subway-lettuce-tracker/migrations" Mode="ro" Description="Database initialization scripts" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/migrations</Config>
+  <Config Name="Database Name" Target="POSTGRES_DB" Default="subway_lettuce_tracker" Mode="" Description="Name of the database" Type="Variable" Display="always" Required="true" Mask="false">subway_lettuce_tracker</Config>
+  <Config Name="Database User" Target="POSTGRES_USER" Default="postgres" Mode="" Description="Database username" Type="Variable" Display="always" Required="true" Mask="false">postgres</Config>
+  <Config Name="Database Password" Target="POSTGRES_PASSWORD" Default="postgres123" Mode="" Description="Database password (CHANGE THIS!)" Type="Variable" Display="always" Required="true" Mask="true">postgres123</Config>
+  <Config Name="Auth Method" Target="POSTGRES_HOST_AUTH_METHOD" Default="md5" Mode="" Description="Authentication method (use md5 for production)" Type="Variable" Display="advanced" Required="false" Mask="false">md5</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="America/New_York" Mode="" Description="Timezone" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+</Container>

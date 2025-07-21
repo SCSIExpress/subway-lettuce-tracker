@@ -1,0 +1,188 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: subway-lettuce-postgres-prod
+    environment:
+      POSTGRES_DB: subway_lettuce_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST_AUTH_METHOD: md5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subway_lettuce_tracker"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - subway-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: subway-lettuce-redis-prod
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "auth", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - subway-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: subway-lettuce-backend-prod
+    environment:
+      # Core settings
+      NODE_ENV: production
+      PORT: 5000
+      # Database settings
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/subway_lettuce_tracker}
+      # Redis settings
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD}@redis:6379}
+      # CORS settings
+      FRONTEND_URL: ${FRONTEND_URL:-https://${DOMAIN_NAME:-localhost}}
+      # Rate limiting (stricter for production)
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-50}
+      # Cache settings
+      CACHE_TTL: ${CACHE_TTL:-7200}
+      ENABLE_CACHE: ${ENABLE_CACHE:-true}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-warn}
+      # Performance monitoring
+      ENABLE_PERFORMANCE_MONITORING: ${ENABLE_PERFORMANCE_MONITORING:-true}
+      # Security
+      TRUST_PROXY: ${TRUST_PROXY:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - subway-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: subway-lettuce-frontend-prod
+    environment:
+      # API URL for production
+      VITE_API_URL: ${VITE_API_URL:-https://${DOMAIN_NAME:-localhost}/api}
+      # Google Maps API Key
+      VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+      # Feature flags
+      VITE_ENABLE_OFFLINE_MODE: ${VITE_ENABLE_OFFLINE_MODE:-true}
+      VITE_ENABLE_PWA: ${VITE_ENABLE_PWA:-true}
+      VITE_ENABLE_ANALYTICS: ${VITE_ENABLE_ANALYTICS:-true}
+      # App configuration
+      VITE_APP_NAME: ${VITE_APP_NAME:-"Subway Lettuce Tracker"}
+      VITE_DEFAULT_RADIUS: ${VITE_DEFAULT_RADIUS:-5000}
+      VITE_MAX_LOCATIONS: ${VITE_MAX_LOCATIONS:-100}
+      # Production optimizations
+      VITE_BUILD_MODE: production
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - subway-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: subway-lettuce-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - subway-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  nginx_cache:
+    driver: local
+
+networks:
+  subway-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
