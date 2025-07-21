@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Subway-Lettuce-Tracker-AIO</Name>
-  <Repository>ghcr.io/your-username/subway-lettuce-tracker-aio:latest</Repository>
+  <Repository>ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest</Repository>
   <Registry>https://ghcr.io/</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
-  <Project>https://github.com/your-username/subway-lettuce-tracker</Project>
+  <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
+  <Project>https://github.com/SCSIExpress/subway-lettuce-tracker</Project>
   <Overview>Subway Lettuce Tracker - All-in-One Container
 
 A complete web application to track and rate lettuce quality at Subway locations. This all-in-one container includes:
@@ -33,8 +33,8 @@ IMPORTANT: You must provide a Google Maps API key for the application to functio
 This is a simplified deployment option that runs all services in a single container for easier Unraid management.</Overview>
   <Category>Productivity:</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-all-in-one.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-all-in-one.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>

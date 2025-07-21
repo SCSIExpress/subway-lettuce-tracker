@@ -7,7 +7,7 @@
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
+  <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
   <Project>https://redis.io/</Project>
   <Overview>Redis cache server for the Subway Lettuce Tracker application. This container provides high-performance caching and session storage to improve application response times.
 
@@ -21,7 +21,7 @@ Features:
 This is a required component for the Subway Lettuce Tracker application to provide optimal performance.</Overview>
   <Category>Productivity:</Category>
   <WebUI/>
-  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-redis.xml</TemplateURL>
+  <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-redis.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/docker-library/docs/master/redis/logo.png</Icon>
   <ExtraParams>--network=subway-network</ExtraParams>
   <PostArgs>redis-server --appendonly yes --requirepass [REDIS_PASSWORD] --maxmemory 256mb --maxmemory-policy allkeys-lru</PostArgs>

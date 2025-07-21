@@ -7,7 +7,7 @@
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
+  <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
   <Project>https://postgis.net/</Project>
   <Overview>PostgreSQL database with PostGIS extension for the Subway Lettuce Tracker application. This container provides the main database storage for location data, ratings, and application state.
 
@@ -21,7 +21,7 @@ Features:
 This is a required component for the Subway Lettuce Tracker application.</Overview>
   <Category>Productivity:</Category>
   <WebUI/>
-  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-postgres.xml</TemplateURL>
+  <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-postgres.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/docker-library/docs/master/postgres/logo.png</Icon>
   <ExtraParams>--network=subway-network</ExtraParams>
   <PostArgs/>

@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Subway-Lettuce-Tracker-Stack</Name>
-  <Repository>ghcr.io/your-username/subway-lettuce-tracker:latest</Repository>
+  <Repository>ghcr.io/scsiexpress/subway-lettuce-tracker-frontend:latest</Repository>
   <Registry>https://ghcr.io/</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/your-username/subway-lettuce-tracker</Support>
-  <Project>https://github.com/your-username/subway-lettuce-tracker</Project>
+  <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
+  <Project>https://github.com/SCSIExpress/subway-lettuce-tracker</Project>
   <Overview>Subway Lettuce Tracker - A web application to track and rate lettuce quality at Subway locations. This is the main application stack that includes frontend, backend, database, and cache services.
 
 Features:
@@ -22,8 +22,8 @@ Features:
 This template sets up the complete application stack. Make sure to configure all required environment variables, especially the Google Maps API key.</Overview>
   <Category>Productivity:</Category>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-stack.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/your-username/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-stack.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
   <ExtraParams>--network=subway-network</ExtraParams>
   <PostArgs/>
   <CPUset/>
