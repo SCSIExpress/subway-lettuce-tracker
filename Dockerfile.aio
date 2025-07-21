@@ -1,0 +1,150 @@
+# Multi-stage build for All-in-One Subway Lettuce Tracker
+FROM node:18-alpine AS backend-builder
+
+# Build backend
+WORKDIR /app/backend
+COPY backend/package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+COPY backend/ ./
+RUN npm run build
+
+FROM node:18-alpine AS frontend-builder
+
+# Build frontend
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci && npm cache clean --force
+COPY frontend/ ./
+RUN npm run build
+
+# Final runtime stage
+FROM node:18-alpine
+
+# Install nginx and supervisor for process management
+RUN apk add --no-cache nginx supervisor curl
+
+# Create application directories
+RUN mkdir -p /app/{backend,frontend,logs} \
+    /var/log/supervisor \
+    /etc/supervisor/conf.d \
+    /run/nginx \
+    /var/lib/nginx/logs
+
+# Copy built backend
+COPY --from=backend-builder /app/backend/dist /app/backend/
+COPY --from=backend-builder /app/backend/node_modules /app/backend/node_modules
+COPY --from=backend-builder /app/backend/package.json /app/backend/
+# Copy database migrations (not included in TypeScript build)
+COPY backend/src/database/migrations /app/backend/database/migrations
+
+# Copy built frontend
+COPY --from=frontend-builder /app/frontend/dist /app/frontend/
+
+# Create nginx configuration for serving frontend and proxying API
+RUN cat > /etc/nginx/nginx.conf << 'EOF'
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+    
+    access_log /var/log/nginx/access.log main;
+    
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+    
+    server {
+        listen 8080;
+        server_name _;
+        root /app/frontend;
+        index index.html;
+        
+        # Serve frontend static files
+        location / {
+            try_files $uri $uri/ /index.html;
+            add_header Cache-Control "public, max-age=3600";
+        }
+        
+        # Proxy API requests to backend
+        location /api/ {
+            proxy_pass http://localhost:5000/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+        
+        # Health check endpoint
+        location /health {
+            proxy_pass http://localhost:5000/health;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_connect_timeout 5s;
+            proxy_send_timeout 5s;
+            proxy_read_timeout 5s;
+        }
+    }
+}
+EOF
+
+# Create supervisor configuration
+RUN printf '[supervisord]\nnodaemon=true\nuser=root\nlogfile=/var/log/supervisor/supervisord.log\npidfile=/var/run/supervisord.pid\nchildlogdir=/var/log/supervisor\n\n[program:backend]\ncommand=node /app/backend/server.js\ndirectory=/app/backend\nautostart=true\nautorestart=true\nstderr_logfile=/var/log/supervisor/backend.err.log\nstdout_logfile=/var/log/supervisor/backend.out.log\nenvironment=NODE_ENV=production\n\n[program:nginx]\ncommand=nginx -g "daemon off;"\nautostart=%%(ENV_ENABLE_FRONTEND)s\nautorestart=true\nstderr_logfile=/var/log/supervisor/nginx.err.log\nstdout_logfile=/var/log/supervisor/nginx.out.log\n' > /etc/supervisor/conf.d/supervisord.conf
+
+# Create startup script
+RUN printf '#!/bin/sh\nset -e\n\necho "Starting Subway Lettuce Tracker AIO Container..."\n\n# Set default environment variables\nexport NODE_ENV=${NODE_ENV:-production}\nexport PORT=${PORT:-5000}\nexport ENABLE_FRONTEND=${ENABLE_FRONTEND:-true}\n\n# Validate required environment variables\nif [ -z "$DATABASE_URL" ]; then\n    echo "ERROR: DATABASE_URL environment variable is required"\n    exit 1\nfi\n\nif [ -z "$REDIS_URL" ]; then\n    echo "ERROR: REDIS_URL environment variable is required"\n    exit 1\nfi\n\necho "Configuration:"\necho "- Backend Port: $PORT"\necho "- Frontend Enabled: $ENABLE_FRONTEND"\necho "- Database: ${DATABASE_URL%%%%@*}@***"\necho "- Redis: ${REDIS_URL%%%%@*}@***"\n\n# Create nginx user if it does not exist\nif ! id nginx >/dev/null 2>&1; then\n    adduser -D -s /sbin/nologin nginx\nfi\n\n# Set proper permissions\nchown -R nginx:nginx /var/lib/nginx /var/log/nginx /run/nginx 2>/dev/null || true\n\necho "Starting services with supervisor..."\nexec supervisord -c /etc/supervisor/conf.d/supervisord.conf\n' > /app/start.sh
+
+RUN chmod +x /app/start.sh
+
+# Create a simple health check script
+RUN printf '#!/bin/sh\n# Check backend health\nif ! curl -f http://localhost:5000/health >/dev/null 2>&1; then\n    echo "Backend health check failed"\n    exit 1\nfi\n\n# Check frontend health if enabled\nif [ "$ENABLE_FRONTEND" = "true" ]; then\n    if ! curl -f http://localhost:8080/ >/dev/null 2>&1; then\n        echo "Frontend health check failed"\n        exit 1\n    fi\nfi\n\necho "Health check passed"\nexit 0\n' > /app/healthcheck.sh
+
+RUN chmod +x /app/healthcheck.sh
+
+# Install additional dependencies for health checks and Redis client
+RUN npm install -g redis pg
+
+# Expose ports
+EXPOSE 8080 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD /app/healthcheck.sh
+
+# Set working directory
+WORKDIR /app
+
+# Default environment variables
+ENV NODE_ENV=production \
+    PORT=5000 \
+    ENABLE_FRONTEND=true \
+    FRONTEND_URL=http://localhost:8080 \
+    VITE_API_URL=http://localhost:8080/api
+
+# Start the application
+CMD ["/app/start.sh"]

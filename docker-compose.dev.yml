@@ -75,7 +75,7 @@ services:
     container_name: subway-lettuce-frontend-dev
     environment:
       VITE_API_URL: http://localhost:5000/api
-      VITE_GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY}
+      VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
     ports:
       - "3000:3000"
     volumes:

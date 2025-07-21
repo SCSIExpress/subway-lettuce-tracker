@@ -9,15 +9,13 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
   <Project>https://github.com/SCSIExpress/subway-lettuce-tracker</Project>
-  <Overview>Subway Lettuce Tracker - All-in-One Container
+  <Overview>Subway Lettuce Tracker - All-in-One Application Container
 
-A complete web application to track and rate lettuce quality at Subway locations. This all-in-one container includes:
+A complete web application to track and rate lettuce quality at Subway locations. This container includes:
 
-- Frontend React application
+- Frontend React application (configurable)
 - Backend Node.js API
-- PostgreSQL database with PostGIS
-- Redis cache server
-- Nginx reverse proxy
+- Nginx reverse proxy (when frontend enabled)
 
 Features:
 - Location-based Subway restaurant finder
@@ -28,9 +26,12 @@ Features:
 - Performance monitoring and caching
 - Responsive design for mobile and desktop
 
-IMPORTANT: You must provide a Google Maps API key for the application to function properly. Get one from the Google Cloud Console and enable the Maps JavaScript API.
+REQUIREMENTS:
+- External PostgreSQL database (with PostGIS extension)
+- External Redis cache server
+- Google Maps API key (get from Google Cloud Console)
 
-This is a simplified deployment option that runs all services in a single container for easier Unraid management.</Overview>
+This container is designed to work with external databases for better scalability and data persistence. You can enable/disable the frontend component as needed.</Overview>
   <Category>Productivity:</Category>
   <WebUI>http://[IP]:[PORT:8080]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-all-in-one.xml</TemplateURL>
@@ -48,9 +49,7 @@ This is a simplified deployment option that runs all services in a single contai
   <Config Name="API Port" Target="5000" Default="5000" Mode="tcp" Description="Port for the API backend (optional external access)" Type="Port" Display="always" Required="false" Mask="false">5000</Config>
   
   <!-- Volume Configurations -->
-  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/subway-lettuce-tracker" Mode="rw" Description="Application data and configuration" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker</Config>
-  <Config Name="Database Data" Target="/var/lib/postgresql/data" Default="/mnt/user/appdata/subway-lettuce-tracker/postgres" Mode="rw" Description="PostgreSQL database files" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/postgres</Config>
-  <Config Name="Redis Data" Target="/data" Default="/mnt/user/appdata/subway-lettuce-tracker/redis" Mode="rw" Description="Redis cache data" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/redis</Config>
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/subway-lettuce-tracker" Mode="rw" Description="Application data and configuration" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker</Config>
   <Config Name="Logs" Target="/app/logs" Default="/mnt/user/appdata/subway-lettuce-tracker/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/logs</Config>
   <Config Name="SSL Certificates" Target="/etc/nginx/ssl" Default="/mnt/user/appdata/subway-lettuce-tracker/ssl" Mode="ro" Description="SSL certificates for HTTPS (optional)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/ssl</Config>
   
@@ -58,13 +57,12 @@ This is a simplified deployment option that runs all services in a single contai
   <Config Name="Google Maps API Key" Target="VITE_GOOGLE_MAPS_API_KEY" Default="" Mode="" Description="Google Maps API Key - REQUIRED for maps functionality. Get from Google Cloud Console." Type="Variable" Display="always" Required="true" Mask="true"/>
   <Config Name="Application Name" Target="VITE_APP_NAME" Default="Subway Lettuce Tracker" Mode="" Description="Display name of the application" Type="Variable" Display="always" Required="false" Mask="false">Subway Lettuce Tracker</Config>
   
-  <!-- Database Configuration -->
-  <Config Name="Database Password" Target="POSTGRES_PASSWORD" Default="postgres123" Mode="" Description="PostgreSQL database password - CHANGE THIS for security!" Type="Variable" Display="always" Required="true" Mask="true">postgres123</Config>
-  <Config Name="Database Name" Target="POSTGRES_DB" Default="subway_lettuce_tracker" Mode="" Description="Name of the PostgreSQL database" Type="Variable" Display="advanced" Required="false" Mask="false">subway_lettuce_tracker</Config>
-  <Config Name="Database User" Target="POSTGRES_USER" Default="postgres" Mode="" Description="PostgreSQL database username" Type="Variable" Display="advanced" Required="false" Mask="false">postgres</Config>
+  <!-- External Database Configuration -->
+  <Config Name="Database URL" Target="DATABASE_URL" Default="postgresql://postgres:your_password@your_postgres_host:5432/subway_lettuce_tracker" Mode="" Description="PostgreSQL connection URL - REQUIRED. Format: postgresql://user:password@host:port/database" Type="Variable" Display="always" Required="true" Mask="true">postgresql://postgres:your_password@your_postgres_host:5432/subway_lettuce_tracker</Config>
+  <Config Name="Redis URL" Target="REDIS_URL" Default="redis://:your_password@your_redis_host:6379" Mode="" Description="Redis connection URL - REQUIRED. Format: redis://:password@host:port" Type="Variable" Display="always" Required="true" Mask="true">redis://:your_password@your_redis_host:6379</Config>
   
-  <!-- Redis Configuration -->
-  <Config Name="Redis Password" Target="REDIS_PASSWORD" Default="redis123" Mode="" Description="Redis cache password - CHANGE THIS for security!" Type="Variable" Display="always" Required="true" Mask="true">redis123</Config>
+  <!-- Container Configuration -->
+  <Config Name="Enable Frontend" Target="ENABLE_FRONTEND" Default="true" Mode="" Description="Enable the frontend web interface (set to false for API-only mode)" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
   
   <!-- Application Configuration -->
   <Config Name="Environment" Target="NODE_ENV" Default="production" Mode="" Description="Application environment (production/development)" Type="Variable" Display="advanced" Required="false" Mask="false">production</Config>
