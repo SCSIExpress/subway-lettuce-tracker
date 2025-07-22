@@ -1,128 +1,120 @@
-# Leaf App - Subway Lettuce Tracker
+# Subway Lettuce Tracker
 
 A crowd-sourced web application that allows users to report and view the freshness status of lettuce at Subway restaurant locations.
 
-## Features
+## 🚀 Quick Start with AIO Container
 
-- 🗺️ Interactive map showing nearby Subway locations
+The easiest way to run the Subway Lettuce Tracker is using our All-in-One (AIO) Docker container:
+
+```bash
+# Using Docker Compose (Recommended)
+docker-compose -f docker-compose.aio.yml up -d
+
+# Or using Docker directly
+docker run -d --name subway-lettuce-tracker \
+  -p 8080:8080 \
+  -e VITE_GOOGLE_MAPS_API_KEY=your_api_key_here \
+  -e DATABASE_URL=postgresql://user:pass@host:5432/db \
+  -e REDIS_URL=redis://host:6379 \
+  ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest
+```
+
+## 📦 What's Included
+
+The AIO container includes:
+- **Frontend**: React application with Google Maps integration
+- **Backend**: Node.js API server
+- **Nginx**: Reverse proxy and static file serving
+- **Health Checks**: Built-in monitoring
+
+## 🔧 Configuration
+
+### Required Environment Variables
+
+- `VITE_GOOGLE_MAPS_API_KEY` - Your Google Maps JavaScript API key
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_URL` - Redis connection string
+
+### Optional Environment Variables
+
+- `NODE_ENV` - Application environment (default: production)
+- `PORT` - Backend port (default: 5000)
+- `VITE_API_URL` - API endpoint URL (default: http://localhost:8080/api)
+- `ENABLE_FRONTEND` - Enable/disable frontend (default: true)
+
+## 🐳 Unraid Deployment
+
+For Unraid users, we provide ready-to-use templates:
+
+1. **All-in-One Template**: Single container with everything included
+2. **Individual Components**: Separate containers for advanced setups
+
+Templates are available at:
+```
+https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/
+```
+
+See [Unraid Deployment Guide](docs/UNRAID_DEPLOYMENT.md) for detailed instructions.
+
+## 🛠️ Development
+
+For local development:
+
+```bash
+# Clone the repository
+git clone https://github.com/SCSIExpress/subway-lettuce-tracker.git
+cd subway-lettuce-tracker
+
+# Copy environment file
+cp .env.example .env
+
+# Edit .env with your configuration
+nano .env
+
+# Start development environment
+docker-compose -f docker-compose.aio.yml up -d
+```
+
+## 📚 Documentation
+
+- [Unraid Deployment Guide](docs/UNRAID_DEPLOYMENT.md) - Complete Unraid setup
+- [Docker Configuration](docs/DOCKER_CONFIGURATION.md) - Advanced Docker setup
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
+
+## 🔒 Security
+
+- API keys are injected at runtime (not baked into images)
+- Non-root containers
+- Network isolation
+- Input validation and rate limiting
+
+## 📊 Features
+
+- 🗺️ Interactive map with nearby Subway locations
 - ⭐ Crowd-sourced lettuce freshness ratings (1-5 scale)
 - 📍 Location-based services with distance sorting
-- 📱 Responsive bento box design for mobile compatibility
-- 🕒 Historical analysis for optimal timing recommendations
+- 📱 Responsive design for mobile compatibility
+- 🕒 Historical analysis for optimal timing
 - 🧭 Google Maps integration for directions
 
-## Tech Stack
+## 🛠️ Build and Deploy
 
-### Frontend
-- React 18 with TypeScript
-- Vite for fast development
-- Tailwind CSS for styling
-- React Query for server state management
-- Zustand for client state management
-- Google Maps JavaScript API
-
-### Backend
-- Node.js with Express
-- TypeScript
-- PostgreSQL with PostGIS extension
-- Redis for caching
-- JWT authentication (future feature)
-
-## Quick Start
-
-### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for local development)
-- Google Maps API key
-
-### Using Docker (Recommended)
-
-1. Clone the repository
-2. Copy environment files:
-   ```bash
-   cp .env.example .env
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env
-   ```
-
-3. Add your Google Maps API key to the environment files
-
-4. Start all services:
-   ```bash
-   docker-compose up -d
-   ```
-
-5. The application will be available at:
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:5000
-   - Database: localhost:5432
-   - Redis: localhost:6379
-
-### Local Development
-
-1. Start the database services:
-   ```bash
-   docker-compose up postgres redis -d
-   ```
-
-2. Install and run backend:
-   ```bash
-   cd backend
-   npm install
-   npm run dev
-   ```
-
-3. Install and run frontend:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-## Environment Variables
-
-### Required
-- `GOOGLE_MAPS_API_KEY`: Your Google Maps JavaScript API key
-
-### Optional
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`: Database configuration
-- `REDIS_URL`: Redis connection string
-- `PORT`: Backend server port (default: 5000)
-- `FRONTEND_URL`: Frontend URL for CORS (default: http://localhost:3000)
-
-## API Endpoints
-
-- `GET /health` - Health check
-- `GET /api/test` - Test endpoint
-- `GET /api/locations/nearby` - Get nearby Subway locations (coming soon)
-- `POST /api/locations/:id/ratings` - Submit lettuce rating (coming soon)
-
-## Database Schema
-
-The application uses PostgreSQL with PostGIS extension for geospatial queries:
-
-- `locations` table: Subway location data with coordinates
-- `ratings` table: User-submitted lettuce freshness ratings
-- Spatial indexes for efficient location-based queries
-- Functions for weighted score calculations
-
-## Development
-
-### Running Tests
+### Build AIO Container
 ```bash
-# Backend tests
-cd backend && npm test
-
-# Frontend tests
-cd frontend && npm test
+./scripts/build-aio.sh
 ```
 
-### Database Migrations
+### Test Container
 ```bash
-cd backend && npm run migrate
+./scripts/test-aio.sh
 ```
 
-## Contributing
+### Push to GitHub Container Registry
+```bash
+./scripts/push-to-ghcr.sh
+```
+
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -130,6 +122,6 @@ cd backend && npm run migrate
 4. Add tests
 5. Submit a pull request
 
-## License
+## 📄 License
 
 MIT License - see LICENSE file for details

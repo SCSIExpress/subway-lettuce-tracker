@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script to push AIO image to GitHub Container Registry (GHCR)
+# Push AIO Container to GitHub Container Registry (GHCR)
 
 set -e
 
@@ -29,19 +29,18 @@ print_header() {
     echo -e "${BLUE}================================${NC}"
 }
 
-print_header "Push AIO Image to GitHub Container Registry"
+print_header "Push AIO Container to GitHub Container Registry"
 
 # Check if AIO image exists
 print_status "Checking for AIO Docker image..."
-if ! sudo docker images | grep -q "ghcr.io/scsiexpress/subway-lettuce-tracker-aio"; then
+if ! docker images | grep -q "ghcr.io/scsiexpress/subway-lettuce-tracker-aio"; then
     print_error "AIO image not found!"
-    print_error "Please build the image first: sudo docker build -f Dockerfile.aio -t subway-lettuce-tracker-aio:latest ."
-    print_error "Then tag it: sudo docker tag subway-lettuce-tracker-aio:latest ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest"
+    print_error "Please build the image first: ./scripts/build-aio.sh"
     exit 1
 fi
 
 print_status "✅ Found AIO image:"
-sudo docker images | grep "ghcr.io/scsiexpress/subway-lettuce-tracker-aio"
+docker images | grep "ghcr.io/scsiexpress/subway-lettuce-tracker-aio"
 
 echo ""
 print_warning "You need a GitHub Personal Access Token with 'write:packages' permission."
@@ -72,7 +71,7 @@ fi
 
 # Login to GHCR
 print_status "Logging in to GitHub Container Registry..."
-if echo "$GITHUB_TOKEN" | sudo docker login ghcr.io -u SCSIExpress --password-stdin; then
+if echo "$GITHUB_TOKEN" | docker login ghcr.io -u SCSIExpress --password-stdin; then
     print_status "✅ Successfully logged in to GHCR"
 else
     print_error "❌ Failed to login to GHCR"
@@ -82,7 +81,7 @@ fi
 
 # Push AIO image
 print_status "Pushing AIO image..."
-if sudo docker push ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest; then
+if docker push ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest; then
     print_status "✅ AIO image pushed successfully"
 else
     print_error "❌ Failed to push AIO image"
@@ -98,6 +97,7 @@ echo ""
 print_status "Your AIO image is now publicly available and can be used with:"
 echo "- Unraid templates"
 echo "- Docker Compose"
+echo "- Kubernetes"
 echo "- Any Docker environment"
 
 echo ""
@@ -105,9 +105,9 @@ print_status "To verify the image is available:"
 echo "docker pull ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest"
 
 echo ""
-print_status "Updated Unraid template is ready at:"
-echo "unraid-templates/subway-lettuce-tracker-all-in-one.xml"
+print_status "Unraid template is available at:"
+echo "https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-all-in-one.xml"
 
 # Logout for security
-sudo docker logout ghcr.io
+docker logout ghcr.io
 print_status "Logged out of GHCR for security"

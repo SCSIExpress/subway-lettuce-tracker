@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-07-22T21:06:33.842Z",
+  "apiKey": "AIzaSyD9Lp...",
+  "results": [
+    {
+      "test": "API Key Configuration",
+      "status": "PASS",
+      "details": "Key found: AIzaSyD9Lp..."
+    },
+    {
+      "test": "Geocoding API",
+      "status": "PASS",
+      "details": "Found coordinates: 40.7579747, -73.9855426"
+    },
+    {
+      "test": "Places API (Nearby Search)",
+      "status": "PASS",
+      "details": "Found 17 places"
+    },
+    {
+      "test": "Places API (Text Search)",
+      "status": "PASS",
+      "details": "Found 20 places"
+    },
+    {
+      "test": "Maps JavaScript API",
+      "status": "PASS",
+      "details": "API key accepted"
+    }
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "warnings": 0
+  }
+}

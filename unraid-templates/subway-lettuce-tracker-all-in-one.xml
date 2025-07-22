@@ -15,7 +15,100 @@ A complete web application to track and rate lettuce quality at Subway locations
 
 - Frontend React application (configurable)
 - Backend Node.js API
+- Nginx reverse proxy (when frontend enabled)<?xml version="1.0"?>
+<Container version="2">
+  <Name>Subway-Lettuce-Tracker-AIO</Name>
+  <Repository>ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest</Repository>
+  <Registry>https://ghcr.io/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/SCSIExpress/subway-lettuce-tracker</Support>
+  <Project>https://github.com/SCSIExpress/subway-lettuce-tracker</Project>
+  <Overview>Subway Lettuce Tracker - All-in-One Application Container
+
+A complete web application to track and rate lettuce quality at Subway locations. This container includes:
+
+- Frontend React application (configurable)
+- Backend Node.js API
 - Nginx reverse proxy (when frontend enabled)
+
+Features:
+- Location-based Subway restaurant finder
+- Lettuce quality rating system with 5-star ratings
+- Real-time data synchronization
+- Offline support with Progressive Web App (PWA)
+- Google Maps integration for location services
+- Performance monitoring and caching
+- Responsive design for mobile and desktop
+
+REQUIREMENTS:
+- External PostgreSQL database (with PostGIS extension)
+- External Redis cache server
+- Google Maps API key (get from Google Cloud Console)
+
+This container is designed to work with external databases for better scalability and data persistence. You can enable/disable the frontend component as needed.</Overview>
+  <Category>Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/unraid-templates/subway-lettuce-tracker-all-in-one.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/SCSIExpress/subway-lettuce-tracker/main/frontend/public/icon-192x192.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires>Google Maps API Key</Requires>
+  
+  <!-- Port Configurations -->
+  <Config Name="Web Interface Port" Target="8080" Default="8080" Mode="tcp" Description="Port for the web interface (frontend)" Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="API Port" Target="5000" Default="5000" Mode="tcp" Description="Port for the API backend (optional external access)" Type="Port" Display="always" Required="false" Mask="false">5000</Config>
+  
+  <!-- Volume Configurations -->
+  <Config Name="App Data" Target="/app/data" Default="/mnt/user/appdata/subway-lettuce-tracker" Mode="rw" Description="Application data and configuration" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker</Config>
+  <Config Name="Logs" Target="/app/logs" Default="/mnt/user/appdata/subway-lettuce-tracker/logs" Mode="rw" Description="Application logs" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/logs</Config>
+  <Config Name="SSL Certificates" Target="/etc/nginx/ssl" Default="/mnt/user/appdata/subway-lettuce-tracker/ssl" Mode="ro" Description="SSL certificates for HTTPS (optional)" Type="Path" Display="advanced" Required="false" Mask="false">/mnt/user/appdata/subway-lettuce-tracker/ssl</Config>
+  
+  <!-- Critical Environment Variables -->
+  <Config Name="Google Maps API Key" Target="VITE_GOOGLE_MAPS_API_KEY" Default="" Mode="" Description="Google Maps API Key - REQUIRED for maps functionality. Get from Google Cloud Console." Type="Variable" Display="always" Required="true" Mask="false"/>
+  <Config Name="Application Name" Target="VITE_APP_NAME" Default="Subway Lettuce Tracker" Mode="" Description="Display name of the application" Type="Variable" Display="always" Required="false" Mask="false">Subway Lettuce Tracker</Config>
+  
+  <!-- External Database Configuration -->
+  <Config Name="Database URL" Target="DATABASE_URL" Default="postgresql://postgres:your_password@your_postgres_host:5432/subway_lettuce_tracker" Mode="" Description="PostgreSQL connection URL - REQUIRED. Format: postgresql://user:password@host:port/database" Type="Variable" Display="always" Required="true" Mask="false">postgresql://postgres:your_password@your_postgres_host:5432/subway_lettuce_tracker</Config>
+  <Config Name="Redis URL" Target="REDIS_URL" Default="redis://:your_password@your_redis_host:6379" Mode="" Description="Redis connection URL - REQUIRED. Format: redis://:password@host:port" Type="Variable" Display="always" Required="true" Mask="false">redis://:your_password@your_redis_host:6379</Config>
+  
+  <!-- Container Configuration -->
+  <Config Name="Enable Frontend" Target="ENABLE_FRONTEND" Default="true" Mode="" Description="Enable the frontend web interface (set to false for API-only mode)" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  
+  <!-- Application Configuration -->
+  <Config Name="Environment" Target="NODE_ENV" Default="production" Mode="" Description="Application environment (production/development)" Type="Variable" Display="advanced" Required="false" Mask="false">production</Config>
+  <Config Name="Default Search Radius" Target="VITE_DEFAULT_RADIUS" Default="5000" Mode="" Description="Default search radius in meters" Type="Variable" Display="always" Required="false" Mask="false">5000</Config>
+  <Config Name="Max Locations" Target="VITE_MAX_LOCATIONS" Default="50" Mode="" Description="Maximum number of locations to display" Type="Variable" Display="always" Required="false" Mask="false">50</Config>
+  
+  <!-- Feature Flags -->
+  <Config Name="Enable Offline Mode" Target="VITE_ENABLE_OFFLINE_MODE" Default="true" Mode="" Description="Enable offline functionality and PWA features" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="Enable PWA" Target="VITE_ENABLE_PWA" Default="true" Mode="" Description="Enable Progressive Web App features" Type="Variable" Display="always" Required="false" Mask="false">true</Config>
+  <Config Name="Enable Analytics" Target="VITE_ENABLE_ANALYTICS" Default="false" Mode="" Description="Enable usage analytics (privacy-friendly)" Type="Variable" Display="always" Required="false" Mask="false">false</Config>
+  <Config Name="Enable Cache" Target="ENABLE_CACHE" Default="true" Mode="" Description="Enable application-level caching for better performance" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  
+  <!-- Performance Settings -->
+  <Config Name="Cache TTL" Target="CACHE_TTL" Default="3600" Mode="" Description="Cache time-to-live in seconds (1 hour = 3600)" Type="Variable" Display="advanced" Required="false" Mask="false">3600</Config>
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="info" Mode="" Description="Application log level (debug, info, warn, error)" Type="Variable" Display="advanced" Required="false" Mask="false">info</Config>
+  <Config Name="Rate Limit Window" Target="RATE_LIMIT_WINDOW_MS" Default="900000" Mode="" Description="Rate limiting window in milliseconds (15 min = 900000)" Type="Variable" Display="advanced" Required="false" Mask="false">900000</Config>
+  <Config Name="Rate Limit Max Requests" Target="RATE_LIMIT_MAX_REQUESTS" Default="100" Mode="" Description="Maximum requests per rate limit window" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="Enable Performance Monitoring" Target="ENABLE_PERFORMANCE_MONITORING" Default="true" Mode="" Description="Enable performance monitoring and metrics" Type="Variable" Display="advanced" Required="false" Mask="false">true</Config>
+  
+  <!-- System Configuration -->
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="User ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="Group ID for file permissions" Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+  <Config Name="TZ" Target="TZ" Default="America/New_York" Mode="" Description="Timezone for the application" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+  
+  <!-- Advanced Configuration -->
+  <Config Name="Domain Name" Target="DOMAIN_NAME" Default="" Mode="" Description="Your domain name for production deployment (optional)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+  <Config Name="Enable HTTPS" Target="ENABLE_HTTPS" Default="false" Mode="" Description="Enable HTTPS with SSL certificates" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Debug Mode" Target="DEBUG" Default="" Mode="" Description="Debug patterns for troubleshooting (leave empty for production)" Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>
 
 Features:
 - Location-based Subway restaurant finder

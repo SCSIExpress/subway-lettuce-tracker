@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Quick test script using local databases
+# Test AIO Container Locally with Runtime Environment Variables
+# This script tests the secure AIO container with your local .env file
 
 set -e
 
@@ -11,136 +12,140 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-print_status() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+echo -e "${BLUE}Testing AIO Container with Runtime Environment Variables${NC}"
+echo -e "${BLUE}=====================================================${NC}"
 
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_header() {
-    echo -e "${BLUE}================================${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}================================${NC}"
-}
-
-print_header "Quick AIO Test with Local Databases"
-
-# Check if local databases are running
-if ! sudo docker ps | grep -q "subway-lettuce-postgres-dev"; then
-    print_error "Local PostgreSQL container not running. Start it with:"
-    echo "sudo docker-compose -f docker-compose.dev.yml up -d postgres"
+# Check if container exists
+if ! docker images | grep -q "subway-lettuce-aio"; then
+    echo -e "${RED}ERROR: subway-lettuce-aio container not found${NC}"
+    echo -e "${YELLOW}Please build the container first:${NC}"
+    echo "./build-aio-with-api-key.sh"
     exit 1
 fi
 
-if ! sudo docker ps | grep -q "subway-lettuce-redis-dev"; then
-    print_error "Local Redis container not running. Start it with:"
-    echo "sudo docker-compose -f docker-compose.dev.yml up -d redis"
+# Load environment variables from .env file
+if [ -f .env ]; then
+    echo -e "${GREEN}Loading environment variables from .env file...${NC}"
+    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+else
+    echo -e "${RED}ERROR: .env file not found${NC}"
+    echo -e "${YELLOW}Please create a .env file with your configuration${NC}"
     exit 1
 fi
 
-print_status "✅ Local databases are running"
+# Check required variables
+REQUIRED_VARS=("DATABASE_URL" "REDIS_URL" "VITE_GOOGLE_MAPS_API_KEY")
+MISSING_VARS=()
 
-# Get Google Maps API key
-echo ""
-print_status "Please provide your Google Maps API key (or press Enter to skip):"
-echo -n "Google Maps API Key: "
-read -s GOOGLE_MAPS_API_KEY
-echo ""
+for var in "${REQUIRED_VARS[@]}"; do
+    if [ -z "${!var}" ]; then
+        MISSING_VARS+=("$var")
+    fi
+done
 
-if [ -z "$GOOGLE_MAPS_API_KEY" ]; then
-    print_warning "No API key provided. Using test key (maps won't work)"
-    GOOGLE_MAPS_API_KEY="test_key_for_development"
+if [ ${#MISSING_VARS[@]} -ne 0 ]; then
+    echo -e "${RED}ERROR: Missing required environment variables:${NC}"
+    for var in "${MISSING_VARS[@]}"; do
+        echo -e "${RED}  - $var${NC}"
+    done
+    echo -e "${YELLOW}Please add them to your .env file${NC}"
+    exit 1
 fi
 
-# Configuration
-DATABASE_URL="postgresql://postgres:postgres123@localhost:5432/subway_lettuce_tracker"
-REDIS_URL="redis://:redis123@localhost:6379"
-CONTAINER_NAME="subway-lettuce-aio-test"
-API_PORT="5001"
-FRONTEND_PORT="8080"
+echo -e "${GREEN}✓ All required environment variables found${NC}"
+echo -e "${BLUE}  - DATABASE_URL: ${DATABASE_URL%%@*}@***${NC}"
+echo -e "${BLUE}  - REDIS_URL: ${REDIS_URL%%@*}@***${NC}"
+echo -e "${BLUE}  - GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:0:15}...${NC}"
 
-print_header "Starting AIO Container"
+# Stop any existing test container
+docker stop test-aio-local 2>/dev/null || true
+docker rm test-aio-local 2>/dev/null || true
 
-# Clean up existing container
-if sudo docker ps -a | grep -q "$CONTAINER_NAME"; then
-    print_status "Removing existing test container..."
-    sudo docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-fi
+echo -e "\n${BLUE}Starting test container...${NC}"
 
-# Start the container
-print_status "Starting container with local database connections..."
+# Start container with environment variables
+docker run -d --name test-aio-local \
+    -p 8081:8080 \
+    -e DATABASE_URL="$DATABASE_URL" \
+    -e REDIS_URL="$REDIS_URL" \
+    -e VITE_GOOGLE_MAPS_API_KEY="$VITE_GOOGLE_MAPS_API_KEY" \
+    -e VITE_API_URL="${VITE_API_URL:-http://localhost:8081/api}" \
+    subway-lettuce-aio:latest
 
-sudo docker run -d \
-  --name "$CONTAINER_NAME" \
-  --network host \
-  -e DATABASE_URL="$DATABASE_URL" \
-  -e REDIS_URL="$REDIS_URL" \
-  -e VITE_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY" \
-  -e ENABLE_FRONTEND=true \
-  -e NODE_ENV=production \
-  ghcr.io/scsiexpress/subway-lettuce-tracker-aio:latest
+# Wait for container to start
+echo -e "${YELLOW}Waiting for container to start...${NC}"
+sleep 10
 
-if [ $? -eq 0 ]; then
-    print_status "✅ Container started successfully!"
+# Check if container is running
+if docker ps | grep -q "test-aio-local"; then
+    echo -e "${GREEN}✓ Container started successfully${NC}"
     
-    # Wait for startup
-    print_status "Waiting for services to start..."
-    sleep 10
+    # Check logs for environment variable injection
+    echo -e "\n${BLUE}Checking environment variable injection...${NC}"
+    INJECTION_LOG=$(docker logs test-aio-local 2>&1 | grep -i "injecting" || echo "")
     
-    # Show logs
-    print_status "Container logs:"
-    sudo docker logs --tail 15 "$CONTAINER_NAME"
-    
-    echo ""
-    print_header "Testing Endpoints"
-    
-    # Test API
-    print_status "Testing API health endpoint..."
-    if curl -f -s "http://localhost:$API_PORT/health" >/dev/null; then
-        print_status "✅ API is responding at http://localhost:$API_PORT"
-        echo ""
-        echo "API Health Response:"
-        curl -s "http://localhost:$API_PORT/health" | python3 -m json.tool 2>/dev/null || curl -s "http://localhost:$API_PORT/health"
+    if [ -n "$INJECTION_LOG" ]; then
+        echo -e "${GREEN}✓ Environment variables injected:${NC}"
+        echo -e "${BLUE}$INJECTION_LOG${NC}"
     else
-        print_warning "❌ API not responding yet. Check logs:"
-        sudo docker logs --tail 10 "$CONTAINER_NAME"
+        echo -e "${YELLOW}⚠ No injection logs found${NC}"
     fi
     
-    echo ""
+    # Test frontend accessibility
+    echo -e "\n${BLUE}Testing frontend accessibility...${NC}"
+    sleep 5
     
-    # Test frontend
-    print_status "Testing frontend endpoint..."
-    if curl -f -s "http://localhost:$FRONTEND_PORT" >/dev/null; then
-        print_status "✅ Frontend is responding at http://localhost:$FRONTEND_PORT"
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/ || echo "000")
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo -e "${GREEN}✓ Frontend accessible at http://localhost:8081/${NC}"
+        
+        # Test if API key is in the frontend files
+        echo -e "\n${BLUE}Testing API key injection...${NC}"
+        API_KEY_TEST=$(curl -s http://localhost:8081/ | grep -o "AIzaSy[A-Za-z0-9_-]*" | head -1 || echo "")
+        
+        if [ -n "$API_KEY_TEST" ]; then
+            echo -e "${GREEN}✓ API key found in frontend: ${API_KEY_TEST:0:15}...${NC}"
+        else
+            echo -e "${YELLOW}⚠ API key not found in frontend HTML${NC}"
+            echo -e "${BLUE}Checking JavaScript files...${NC}"
+            
+            # Get a JS file and check for API key
+            JS_FILE=$(curl -s http://localhost:8081/ | grep -o 'assets/[^"]*\.js' | head -1)
+            if [ -n "$JS_FILE" ]; then
+                JS_API_KEY=$(curl -s "http://localhost:8081/$JS_FILE" | grep -o "AIzaSy[A-Za-z0-9_-]*" | head -1 || echo "")
+                if [ -n "$JS_API_KEY" ]; then
+                    echo -e "${GREEN}✓ API key found in JavaScript: ${JS_API_KEY:0:15}...${NC}"
+                else
+                    echo -e "${RED}✗ API key not found in JavaScript files${NC}"
+                fi
+            fi
+        fi
+        
+        echo -e "\n${GREEN}🎉 Test completed successfully!${NC}"
+        echo -e "${BLUE}Your container is ready to use with runtime environment variables.${NC}"
+        echo -e "\n${YELLOW}To use this container permanently:${NC}"
+        echo "1. Stop the test container: docker stop test-aio-local"
+        echo "2. Run with your preferred name:"
+        echo "   docker run -d --name subway-lettuce-aio \\"
+        echo "     -p 8080:8080 \\"
+        echo "     --env-file .env \\"
+        echo "     subway-lettuce-aio:latest"
+        
     else
-        print_warning "❌ Frontend not responding yet"
+        echo -e "${RED}✗ Frontend not accessible (HTTP $HTTP_CODE)${NC}"
+        echo -e "${YELLOW}Container logs:${NC}"
+        docker logs test-aio-local 2>&1 | tail -20
     fi
-    
-    echo ""
-    print_header "🎉 Test Results"
-    
-    echo "Container Status:"
-    sudo docker ps | grep "$CONTAINER_NAME" || echo "Container not in running state"
-    
-    echo ""
-    echo "Access your application:"
-    echo "- 🌐 Frontend: http://localhost:$FRONTEND_PORT"
-    echo "- 🔌 API: http://localhost:$API_PORT"
-    echo "- 📊 Health: http://localhost:$API_PORT/health"
-    
-    echo ""
-    echo "Management commands:"
-    echo "- View logs: sudo docker logs -f $CONTAINER_NAME"
-    echo "- Stop: sudo docker stop $CONTAINER_NAME"
-    echo "- Remove: sudo docker rm -f $CONTAINER_NAME"
     
 else
-    print_error "❌ Failed to start container"
-    exit 1
+    echo -e "${RED}✗ Container failed to start${NC}"
+    echo -e "${YELLOW}Container logs:${NC}"
+    docker logs test-aio-local 2>&1 | tail -20
 fi
+
+#echo -e "\n${BLUE}Cleaning up test container...${NC}"
+#docker stop test-aio-local 2>/dev/null || true
+#docker rm test-aio-local 2>/dev/null || true
+
+echo -e "${GREEN}Test completed!${NC}"

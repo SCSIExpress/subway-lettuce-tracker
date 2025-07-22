@@ -1,0 +1,136 @@
+version: '3.8'
+
+# Secure AIO Docker Compose Configuration
+# Uses runtime environment variable injection - no hardcoded API keys
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:15-3.3-alpine
+    container_name: subway-lettuce-postgres-aio
+    environment:
+      POSTGRES_DB: subway_lettuce_tracker
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_aio:/var/lib/postgresql/data
+      - ./backend/src/database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subway_lettuce_tracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - subway-network-aio
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: subway-lettuce-redis-aio
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_aio:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - subway-network-aio
+    restart: unless-stopped
+
+  # All-in-One Application (Frontend + Backend + Nginx)
+  subway-lettuce-aio:
+    image: subway-lettuce-aio:latest
+    container_name: subway-lettuce-aio
+    environment:
+      # Core settings
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-5000}
+      ENABLE_FRONTEND: ${ENABLE_FRONTEND:-true}
+      
+      # Database settings
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:${POSTGRES_PASSWORD:-postgres123}@postgres:5432/subway_lettuce_tracker}
+      
+      # Redis settings  
+      REDIS_URL: ${REDIS_URL:-redis://:${REDIS_PASSWORD:-redis123}@redis:6379}
+      
+      # Frontend environment variables (injected at runtime)
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/api}
+      VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+      
+      # App configuration
+      VITE_APP_NAME: ${VITE_APP_NAME:-"Subway Lettuce Tracker"}
+      VITE_DEFAULT_RADIUS: ${VITE_DEFAULT_RADIUS:-5000}
+      VITE_MAX_LOCATIONS: ${VITE_MAX_LOCATIONS:-50}
+      
+      # Feature flags
+      VITE_ENABLE_OFFLINE_MODE: ${VITE_ENABLE_OFFLINE_MODE:-true}
+      VITE_ENABLE_PWA: ${VITE_ENABLE_PWA:-true}
+      VITE_ENABLE_ANALYTICS: ${VITE_ENABLE_ANALYTICS:-false}
+      
+      # Rate limiting
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS:-100}
+      
+      # Cache settings
+      CACHE_TTL: ${CACHE_TTL:-3600}
+      ENABLE_CACHE: ${ENABLE_CACHE:-true}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+    ports:
+      - "${AIO_PORT:-8080}:8080"  # Frontend
+      - "${API_PORT:-5000}:5000"  # Backend API (optional direct access)
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "sh", "/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    networks:
+      - subway-network-aio
+    
+    restart: unless-stopped
+    
+    # Resource limits (optional)
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+volumes:
+  postgres_data_aio:
+    driver: local
+  redis_data_aio:
+    driver: local
+
+networks:
+  subway-network-aio:
+    driver: bridge
+
+# Example usage:
+# 1. Create .env file with your configuration
+# 2. docker-compose -f docker-compose.aio.yml up -d
+# 
+# Required environment variables in .env:
+# VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
+# POSTGRES_PASSWORD=your_secure_postgres_password
+# REDIS_PASSWORD=your_secure_redis_password

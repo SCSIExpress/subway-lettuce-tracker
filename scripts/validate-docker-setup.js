@@ -47,9 +47,7 @@ function validateDockerFiles() {
   log('\n📁 Validating Docker Configuration Files', 'bold');
   
   const dockerFiles = [
-    { path: 'docker-compose.yml', desc: 'Main Docker Compose file' },
-    { path: 'docker-compose.dev.yml', desc: 'Development Docker Compose file' },
-    { path: 'docker-compose.prod.yml', desc: 'Production Docker Compose file' },
+    { path: 'docker-compose.aio.yml', desc: 'AIO Docker Compose file' },
     { path: 'backend/Dockerfile', desc: 'Backend Production Dockerfile' },
     { path: 'backend/Dockerfile.dev', desc: 'Backend Development Dockerfile' },
     { path: 'frontend/Dockerfile', desc: 'Frontend Production Dockerfile' },
